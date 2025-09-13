@@ -123,6 +123,14 @@ Base URL: `http://localhost:PORT/sch`
 }
 ```
 
+1. Create Job - Microservice 1
+
+![](docs/create1.png)
+
+2. Create Job - Microservice 2
+
+![](docs/create2.png)
+
 ### 2. Reschedule Job
 - **POST** `/sch/reschedule`
 - **Content-Type**: `application/json`
@@ -135,6 +143,15 @@ Base URL: `http://localhost:PORT/sch`
 }
 ```
 
+1. Reschedule Job - Microservice 1
+
+![](docs/reschedule1.png)
+
+2. Reschedule Job - Microservice 2
+
+![](docs/reschedule2.png)
+
+
 ### 3. Cancel Job
 - **POST** `/sch/cancel`
 - **Content-Type**: `application/json`
@@ -146,8 +163,16 @@ Base URL: `http://localhost:PORT/sch`
 }
 ```
 
+1. Cancel Job - Microservice 1
+
+![](docs/cancel1.png)
+
 ### 4. Get All Jobs
 - **GET** `/sch/jobs`
+
+1. Get All Job - Microservice 1
+
+![](docs/all1.png)
 
 ### 5. Get Job Status
 - **GET** `/sch/status/{jobId}`
