@@ -99,10 +99,12 @@ java -Dscheduler.server.port=8080 -Dscheduler.instance.id=MicroService2 -jar tar
 1. Microservice 1 
 
 ![](docs/microservice1.png)
+![](docs/microservice1.1.png)
 
 2. Microservice 2
 
 ![](docs/microservice2.png)
+![](docs/microservice2.1.png)
 
 ## API Endpoints
 
