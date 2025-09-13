@@ -10,7 +10,7 @@ A production-ready Java-based distributed scheduler microservice that allows you
 - ✅ **Distributed Coordination**: Uses Kafka for inter-instance communication
 - ✅ **Real-time Operations**: All operations provide immediate feedback with proper error handling
 - ✅ **REST API**: RESTful endpoints at `/sch` context
-- ✅ **No Spring Framework**: Pure Java implementation using Jetty 12
+- ✅ **Jetty 12**: Pure Java implementation using Jetty 12
 - ✅ **Production Ready**: Comprehensive logging, error handling, and graceful shutdown
 
 ## 🏗️ Architecture
@@ -42,19 +42,6 @@ brew install maven
 # Install and start Kafka
 brew install kafka
 brew services start kafka
-```
-
-**Linux/Ubuntu:**
-```bash
-# Install Java 17+
-sudo apt update
-sudo apt install openjdk-17-jdk maven
-
-# Install Kafka (follow Apache Kafka quickstart guide)
-wget https://downloads.apache.org/kafka/2.13-3.5.1/kafka_2.13-3.5.1.tgz
-tar -xzf kafka_2.13-3.5.1.tgz
-cd kafka_2.13-3.5.1/
-# Start Kafka as per documentation
 ```
 
 ### 2. Build the Project
@@ -92,19 +79,19 @@ java -jar target/distributed-scheduler-1.0.0.jar
 
 #### Multiple Instances for Distributed Testing
 
-**Terminal 1 - Instance MS1:**
+**Terminal 1 - Instance MicroService1:**
 ```bash
-java -Dscheduler.server.port=8080 -Dscheduler.instance.id=MS1 -jar target/distributed-scheduler-1.0.0.jar
+java -Dscheduler.server.port=8081 -Dscheduler.instance.id=MicroService1 -jar target/distributed-scheduler-1.0.0.jar
 ```
 
-**Terminal 2 - Instance MS2:**
+**Terminal 2 - Instance MicroService2:**
 ```bash
-java -Dscheduler.server.port=8081 -Dscheduler.instance.id=MS2 -jar target/distributed-scheduler-1.0.0.jar
+java -Dscheduler.server.port=8089 -Dscheduler.instance.id=MicroService2 -jar target/distributed-scheduler-1.0.0.jar
 ```
 
-**Terminal 3 - Instance MS3 (Optional):**
+**Terminal 3 - Instance MicroService3 (Optional):**
 ```bash
-java -Dscheduler.server.port=8082 -Dscheduler.instance.id=MS3 -jar target/distributed-scheduler-1.0.0.jar
+java -Dscheduler.server.port=8080 -Dscheduler.instance.id=MicroService2 -jar target/distributed-scheduler-1.0.0.jar
 ```
 
 ## API Endpoints
@@ -154,10 +141,6 @@ Base URL: `http://localhost:PORT/sch`
 
 ### 5. Get Job Status
 - **GET** `/sch/status/{jobId}`
-
-## Testing Guide
-
-See [TESTING.md](TESTING.md) for comprehensive testing instructions.
 
 ## ⚙️ Configuration
 
@@ -240,214 +223,6 @@ kafka.bootstrap.servers=b-1.mycluster.kafka.us-east-1.amazonaws.com:9092,b-2.myc
 kafka.bootstrap.servers=mynamespace.servicebus.windows.net:9093
 ```
 
-### Docker Configuration
-
-You can also run with Docker using environment variables:
-
-```dockerfile
-FROM openjdk:17-jre-slim
-
-COPY target/distributed-scheduler-1.0.0.jar /app/scheduler.jar
-
-ENV SCHEDULER_SERVER_PORT=8080
-ENV KAFKA_BOOTSTRAP_SERVERS=kafka:9092
-ENV SCHEDULER_INSTANCE_ID=DOCKER-MS1
-
-EXPOSE 8080
-
-CMD ["java", "-jar", "/app/scheduler.jar"]
-```
-
-### Kubernetes Configuration
-
-Example Kubernetes deployment with ConfigMap:
-
-```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: scheduler-config
-data:
-  KAFKA_BOOTSTRAP_SERVERS: "kafka-service:9092"
-  SCHEDULER_CONTEXT_PATH: "/sch"
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: scheduler-deployment
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: scheduler
-  template:
-    metadata:
-      labels:
-        app: scheduler
-    spec:
-      containers:
-      - name: scheduler
-        image: scheduler:latest
-        ports:
-        - containerPort: 8080
-        env:
-        - name: SCHEDULER_SERVER_PORT
-          value: "8080"
-        - name: SCHEDULER_INSTANCE_ID
-          valueFrom:
-            fieldRef:
-              fieldPath: metadata.name
-        envFrom:
-        - configMapRef:
-            name: scheduler-config
-```
-
-## 📊 Logging
-
-Logs are written to:
-- **Console**: INFO level and above with color-coded output
-- **File**: `logs/scheduler.log` (DEBUG level for scheduler package)
-- **Rotation**: Daily rotation with 30-day retention, max 1GB total
-
-### Log Level Configuration
-
-```properties
-# Set different log levels
-logging.level.root=INFO
-logging.level.com.scheduler=DEBUG
-logging.level.org.apache.kafka=WARN
-logging.level.org.eclipse.jetty=INFO
-logging.level.org.quartz=INFO
-```
-
-## 🔧 Troubleshooting
-
-### Common Issues and Solutions
-
-#### 1. Kafka Connection Issues
-```
-Error: Cannot connect to Kafka at localhost:9092
-```
-**Solution:**
-- Ensure Kafka is running: `brew services start kafka` (macOS) or check Kafka status
-- Verify network connectivity: `telnet localhost 9092`
-- Check firewall settings
-- For remote Kafka, verify bootstrap servers are correct
-
-#### 2. Port Already in Use
-```
-Error: Port 8080 is already in use
-```
-**Solution:**
-```bash
-# Find process using port
-lsof -i :8080
-
-# Kill the process or use different port
-java -Dscheduler.server.port=8081 -jar target/distributed-scheduler-1.0.0.jar
-```
-
-#### 3. Distributed Operations Timeout
-```
-Error: Timeout waiting for reschedule/cancel confirmation
-```
-**Known Issue**: Consumer group configuration needs fixing for full distributed functionality.
-**Quick Fix**: Each instance should use unique consumer group:
-```java
-// In KafkaMessageConsumer.java, change:
-props.put(ConsumerConfig.GROUP_ID_CONFIG, "scheduler-consumer-group-" + instanceId);
-```
-
-#### 4. Topics Not Found
-```
-Error: Topic 'scheduler-requests' not found
-```
-**Solution:**
-```bash
-# Create required topics
-kafka-topics.sh --create --topic scheduler-requests --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
-kafka-topics.sh --create --topic scheduler-responses --bootstrap-server localhost:9092 --partitions 3 --replication-factor 1
-```
-
-#### 5. Java Version Issues
-```
-Error: UnsupportedClassVersionError
-```
-**Solution:**
-- Ensure Java 17+ is installed: `java -version`
-- Update JAVA_HOME if necessary
-
-### Health Check Endpoints
-
-Monitor application health:
-```bash
-# Check if service is responding
-curl http://localhost:8080/sch/jobs
-
-# Check specific instance status
-curl http://localhost:8080/sch/status/health
-```
-
-### Performance Tuning
-
-#### JVM Options for Production
-```bash
-java -Xms512m -Xmx2g \
-     -XX:+UseG1GC \
-     -XX:MaxGCPauseMillis=200 \
-     -Dscheduler.server.port=8080 \
-     -jar target/distributed-scheduler-1.0.0.jar
-```
-
-#### Kafka Producer Configuration
-For high-throughput scenarios, tune Kafka producer settings:
-```properties
-# In application.properties
-kafka.producer.batch.size=32768
-kafka.producer.linger.ms=5
-kafka.producer.buffer.memory=67108864
-kafka.producer.compression.type=snappy
-```
-
-## 📈 Production Deployment
-
-### Recommended Production Configuration
-
-```bash
-# Production startup script
-java -server \
-     -Xms1g -Xmx4g \
-     -XX:+UseG1GC \
-     -XX:+PrintGC \
-     -XX:+PrintGCDetails \
-     -Dscheduler.server.port=8080 \
-     -Dscheduler.instance.id=${HOSTNAME}-${RANDOM} \
-     -Dkafka.bootstrap.servers=kafka-cluster:9092 \
-     -Dlogging.level.root=WARN \
-     -Dlogging.level.com.scheduler=INFO \
-     -jar target/distributed-scheduler-1.0.0.jar
-```
-
-### Load Balancer Configuration
-
-For multiple instances behind a load balancer:
-```nginx
-upstream scheduler_backend {
-    server scheduler-ms1:8080;
-    server scheduler-ms2:8080;
-    server scheduler-ms3:8080;
-}
-
-server {
-    listen 80;
-    location /sch/ {
-        proxy_pass http://scheduler_backend;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-    }
-}
-```
-
 ## 🧪 Testing Results
 
 ### ✅ Verified Functionality
@@ -457,11 +232,6 @@ server {
 - ✅ **Multi-instance**: Concurrent operation support
 - ✅ **Error Handling**: Proper error responses
 - ✅ **Logging**: Comprehensive DEBUG logging
-
-### ⚠️ Known Limitations
-- **Distributed Operations**: Requires consumer group fix for cross-instance operations
-- **Persistence**: Uses in-memory storage (Quartz RAMJobStore)
-- **Security**: No authentication/authorization (add as needed)
 
 ### 📊 Performance Metrics
 - **Startup Time**: ~2 seconds per instance
