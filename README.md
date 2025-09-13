@@ -94,6 +94,16 @@ java -Dscheduler.server.port=8089 -Dscheduler.instance.id=MicroService2 -jar tar
 java -Dscheduler.server.port=8080 -Dscheduler.instance.id=MicroService2 -jar target/distributed-scheduler-1.0.0.jar
 ```
 
+## Screenshots
+
+1. Microservice 1 
+
+![](docs/microservice1.png)
+
+2. Microservice 2
+
+![](docs/microservice2.png)
+
 ## API Endpoints
 
 Base URL: `http://localhost:PORT/sch`
